@@ -16,8 +16,12 @@ app.use(express.json())
     // generate random bytes 
       // require('crypto').randomBytes(64).toString('hex')
 
+
+
     // secret code
-    const secretCode = "70e20d5c2e0bbe41d76fd996fa48d8f9921b9bfc21cf574c1f2c4eae012cff7c70dec62dc46c41f583c288fd4e2563f36dedcda872ae3060fe43857d18ac33dc"
+
+    const secretCode = "0df2e5449d4a60c45f66d4333c8b44d618a9e25d88b3eab4daaf89f7013101382882dd74dec975cec35a802ef99d0cb83a4d728e20ac3f2bf0f5d9311c123f06"
+  
 
 // database connect 
 
@@ -46,7 +50,23 @@ const client = new MongoClient(uri, {
     const checkoutCollection = database.collection('booked')
 
 
+  // verify jwt 
 
+  const verifyJWT = (req, res, next) => {
+    const authorization = req.headers.authorization;
+    if(!authorization){
+      return res.status(401).send({error : "unauthorized access"})
+    }
+    const token = authorization.split(' ')[1]
+    jwt.verify(token, secretCode, (error, decoded) => {
+        if(error){
+          res.status(403).send({error: true, message : "token expired"})
+        }
+        req.decoded = decoded;
+        next()
+    })
+
+  }
 
 
 async function run() {
@@ -54,13 +74,14 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
-    // jwt 
-    app.post('/jwt',  (req, res) => {
-      const user = req.body;
-      console.log(user)
-      const token =  jwt.sign(user, secretCode, {expiresIn : '1h'})
+    // jwt sign & get token 
+    app.post('/jwt', (req, res) => {
+      const email = req.body;
+      console.log(email)
+      const token = jwt.sign(email, secretCode, {expiresIn : "1h"})
       res.send({token})
     })
+
 
     // get services 
     app.get('/services', async(req, res) => {
@@ -94,12 +115,11 @@ async function run() {
   
 
     // get specific service 
-    app.get('/checkout', async(req, res) => {
+    app.get('/checkout', verifyJWT, async(req, res) => {
       let query = {}
       if(req.query?.email){
         query = {email : req.query.email}
       }
-
       const result = await checkoutCollection.find(query).toArray()
       res.send(result)
         
@@ -117,7 +137,7 @@ async function run() {
           status : body
         }
       }
-      console.log(updatedDoc)
+    
       const result = await checkoutCollection.updateOne(filter, updatedDoc, options)
       res.send(result)
     })
