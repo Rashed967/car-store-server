@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const app = express()
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const port = process.env.PORT || 5000;
@@ -11,9 +12,22 @@ const {DB_USER, DB_PASS} = process.env
 app.use(cors())
 app.use(express.json())
 
+
+    // generate random bytes 
+      // require('crypto').randomBytes(64).toString('hex')
+
+    // secret code
+    const secretCode = "70e20d5c2e0bbe41d76fd996fa48d8f9921b9bfc21cf574c1f2c4eae012cff7c70dec62dc46c41f583c288fd4e2563f36dedcda872ae3060fe43857d18ac33dc"
+
 // database connect 
 
-const uri = `mongodb+srv://${DB_USER}:${DB_PASS}@cluster0.kt6fwyn.mongodb.net/?retryWrites=true&w=majority`;
+// car-store
+// l2tOAfAGORHA6so0
+
+// const uri = 'mongodb+srv://car-store@admin:QzZpFIKBX1HABZti@cluster0.kt6fwyn.mongodb.net/?retryWrites=true&w=majority';
+
+const uri = "mongodb+srv://car-store:l2tOAfAGORHA6so0@cluster0.kt6fwyn.mongodb.net/?retryWrites=true&w=majority";
+
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -30,6 +44,9 @@ const client = new MongoClient(uri, {
     const database = client.db('carServices')
     const serviceCollection = database.collection('service')
     const checkoutCollection = database.collection('booked')
+
+
+
 
 
 async function run() {
@@ -66,6 +83,7 @@ async function run() {
 
     })
 
+  
 
     // get specific service 
     app.get('/checkout', async(req, res) => {
