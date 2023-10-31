@@ -54,6 +54,14 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
+    // jwt 
+    app.post('/jwt',  (req, res) => {
+      const user = req.body;
+      console.log(user)
+      const token =  jwt.sign(user, secretCode, {expiresIn : '1h'})
+      res.send({token})
+    })
+
     // get services 
     app.get('/services', async(req, res) => {
         const cursor = serviceCollection.find()
