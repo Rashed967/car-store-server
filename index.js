@@ -29,6 +29,7 @@ const client = new MongoClient(uri, {
     // database injection
     const database = client.db('carServices')
     const serviceCollection = database.collection('service')
+    const checkoutCollection = database.collection('booked')
 
 
 async function run() {
@@ -48,8 +49,59 @@ async function run() {
     app.get('/services/:id', async(req, res) => {
         const id = req.params.id;
         const query = {_id : new ObjectId(id)}
-        const result = await serviceCollection.findOne(query)
+        const options = {
+            projection : {title : 1, price : 1, service_id : 1, img : 1}
+        }
+        const result = await serviceCollection.findOne(query, options)
         res.send(result)
+    })
+
+
+    // book service 
+    app.post('/checkout', async(req, res) => {
+        const newCheckout = req.body;
+          newCheckout.status = "Pending"
+        const result = await checkoutCollection.insertOne(newCheckout)
+        res.send(result)
+
+    })
+
+
+    // get specific service 
+    app.get('/checkout', async(req, res) => {
+      let query = {}
+      if(req.query?.email){
+        query = {email : req.query.email}
+      }
+
+      const result = await checkoutCollection.find(query).toArray()
+      res.send(result)
+        
+    })
+
+
+    // update status 
+    app.put('/checkout/:id', async(req, res) => {
+      const id = req.params.id;
+      const body = req.body;
+      const filter = {_id : new ObjectId(id)}
+      const options = {upsert : true      }
+      const updatedDoc = {
+        $set : {
+          status : body
+        }
+      }
+      console.log(updatedDoc)
+      const result = await checkoutCollection.updateOne(filter, updatedDoc, options)
+      res.send(result)
+    })
+
+    // delete a service 
+    app.delete('/checkout/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)}
+      const result = await checkoutCollection.deleteOne(query)
+      res.send(result)
     })
 
 
