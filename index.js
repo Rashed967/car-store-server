@@ -51,22 +51,21 @@ const client = new MongoClient(uri, {
 
 
   // verify jwt 
-
-  const verifyJWT = (req, res, next) => {
-    const authorization = req.headers.authorization;
-    if(!authorization){
-      return res.status(401).send({error : "unauthorized access"})
-    }
-    const token = authorization.split(' ')[1]
-    jwt.verify(token, secretCode, (error, decoded) => {
-        if(error){
-          res.status(403).send({error: true, message : "token expired"})
-        }
-        req.decoded = decoded;
-        next()
-    })
-
+const verifyJWT = (req, res, next) => {
+  const authorization = req.headers.authorization;
+  if(!authorization){
+    return res.status(401).send({error : true, message : "unauthorized access"})
   }
+  const token = authorization.split(' ')[1]
+  jwt.verify(token, secretCode, (error, decoded) => {
+    if(error){
+     return res.status(401).send({error : true, message : "token expired"})
+    }
+    req.decoded = decoded;
+    next()
+  })
+}
+
 
 
 async function run() {
@@ -77,8 +76,7 @@ async function run() {
     // jwt sign & get token 
     app.post('/jwt', (req, res) => {
       const email = req.body;
-      console.log(email)
-      const token = jwt.sign(email, secretCode, {expiresIn : "1h"})
+      const token =  jwt.sign(email, secretCode, {expiresIn : "1h"})
       res.send({token})
     })
 
@@ -117,9 +115,11 @@ async function run() {
     // get specific service 
     app.get('/checkout', verifyJWT, async(req, res) => {
       let query = {}
-      if(req.query?.email){
-        query = {email : req.query.email}
+      if(req.decoded.email !== req.query.email){
+        return res.status(403).send({error : true, message : "forbidden access"})
       }
+        query = {email : req.query.email}
+
       const result = await checkoutCollection.find(query).toArray()
       res.send(result)
         
